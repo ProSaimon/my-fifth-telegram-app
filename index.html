@@ -310,6 +310,7 @@
                 let totalCaptured = 0;
                 const capturedChains = [];
                 const neighbors = this.getNeighbors(move);
+                let    enemyNeighborCount = 0
 
                 // Для каждого соседнего-вражеского камня проверяем жизнь его группы
                 for (const neighbor of neighbors) {
@@ -319,6 +320,7 @@
                             totalCaptured += enemyChain.StoneCount;
                             capturedChains.push(enemyChain);
                         }
+                        enemyNeighborCount = enemyNeighborCount + 1
                     }
                 }
 
@@ -326,7 +328,7 @@
                 // #4 Если больше totalCaptured > 1, то можно сделать ход
                 if (totalCaptured >= 1) {
                     if (totalCaptured === 1 && this.CurrentNode.Parent && 
-                        this.CurrentNode.Parent.Board[move] === this.CurrentNode.Parent.LastMoveColor) {
+                        this.CurrentNode.Parent.Board[move] === this.CurrentNode.Parent.LastMoveColor && enemyNeighborCount === 4) {
                         return "Ko violation";
                     }
                 } else {
