@@ -112,10 +112,12 @@
         }
         
         .stone {
-            width: 80%;
-            height: 80%;
+            width: 70%;
+            height: 70%;
             border-radius: 50%;
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+            position: relative;
         }
         
         .black-stone {
@@ -528,7 +530,7 @@
             
             const size = gameTree.GameSettings.BoardSize;
             
-            // Создаем линии доски
+            // Создаем линии доски - 7 горизонтальных и 7 вертикальных
             for (let i = 0; i < size; i++) {
                 const hLine = document.createElement('div');
                 hLine.className = 'board-line horizontal-line';
@@ -541,12 +543,17 @@
                 boardElement.appendChild(vLine);
             }
             
-            // Создаем пересечения для ходов
+            // Создаем пересечения для ходов - все 49 пересечений
             for (let i = 0; i < size * size; i++) {
                 const intersection = document.createElement('div');
                 intersection.className = 'intersection';
-                intersection.style.left = `${(i % size) * (100 / (size - 1))}%`;
-                intersection.style.top = `${Math.floor(i / size) * (100 / (size - 1))}%`;
+                
+                // Позиционируем все пересечения, включая края
+                const left = (i % size) * (100 / (size - 1));
+                const top = Math.floor(i / size) * (100 / (size - 1));
+                
+                intersection.style.left = `${left}%`;
+                intersection.style.top = `${top}%`;
                 
                 intersection.addEventListener('click', () => {
                     // ВЫЗЫВАЕМ ТВОЙ MakeMove
