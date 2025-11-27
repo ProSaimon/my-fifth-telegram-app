@@ -74,19 +74,20 @@
             border: 2px solid #8b4513;
             border-radius: 5px;
             overflow: hidden;
+            touch-action: manipulation;
         }
         
         .board {
-            display: grid;
-            gap: 0;
             width: 100%;
             aspect-ratio: 1;
             position: relative;
+            background: #dcb35c;
         }
         
         .board-line {
             position: absolute;
             background: #000;
+            z-index: 1;
         }
         
         .horizontal-line {
@@ -103,21 +104,22 @@
         
         .intersection {
             position: absolute;
-            width: calc(100% / 6);
-            height: calc(100% / 6);
+            width: 11%;
+            height: 11%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            transform: translate(-50%, -50%);
+            z-index: 10;
         }
         
         .stone {
-            width: 70%;
-            height: 70%;
+            width: 85%;
+            height: 85%;
             border-radius: 50%;
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-            z-index: 10;
-            position: relative;
+            z-index: 20;
         }
         
         .black-stone {
@@ -165,6 +167,10 @@
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
         }
         
         .status {
@@ -513,7 +519,7 @@
 
         function initGame() {
             const settings = new GameSettings();
-            gameTree = new GoTree(settings); // СОЗДАЕМ GoTree
+            gameTree = new GoTree(settings);
             createBoardUI();
             updateUI();
             
@@ -530,7 +536,7 @@
             
             const size = gameTree.GameSettings.BoardSize;
             
-            // Создаем линии доски - 7 горизонтальных и 7 вертикальных
+            // Создаем линии доски
             for (let i = 0; i < size; i++) {
                 const hLine = document.createElement('div');
                 hLine.className = 'board-line horizontal-line';
@@ -543,20 +549,22 @@
                 boardElement.appendChild(vLine);
             }
             
-            // Создаем пересечения для ходов - все 49 пересечений
+            // Создаем пересечения для ходов
             for (let i = 0; i < size * size; i++) {
                 const intersection = document.createElement('div');
                 intersection.className = 'intersection';
                 
-                // Позиционируем все пересечения, включая края
-                const left = (i % size) * (100 / (size - 1));
-                const top = Math.floor(i / size) * (100 / (size - 1));
+                const col = i % size;
+                const row = Math.floor(i / size);
+                
+                // Позиционируем точно на пересечениях линий
+                const left = col * (100 / (size - 1));
+                const top = row * (100 / (size - 1));
                 
                 intersection.style.left = `${left}%`;
                 intersection.style.top = `${top}%`;
                 
                 intersection.addEventListener('click', () => {
-                    // ВЫЗЫВАЕМ ТВОЙ MakeMove
                     const error = gameTree.makeMove(i);
                     if (error) {
                         showMessage(error);
@@ -586,7 +594,6 @@
         }
 
         function updateUI() {
-            // Получаем данные ИЗ GoTree
             const board = gameTree.getCurrentBoard();
             const currentPlayer = gameTree.getCurrentPlayer();
             const captures = gameTree.getCaptures();
