@@ -225,7 +225,7 @@
     </div>
 
     <script>
-        // ТОЧНО ТВОИ СТРУКТУРЫ БЕЗ ИЗМЕНЕНИЙ
+        // ОБНОВЛЕННЫЕ СТРУКТУРЫ ПО ТВОЕМУ КОДУ
         const PointColor = {
             EMPTY: '.',
             BLACK: 'B', 
@@ -264,7 +264,7 @@
 
         class Chain {
             constructor() {
-                this.ChainMap = {};
+                this.ChainMap = new Set(); // Изменено на Set по твоему коду
                 this.Dame = 0;
                 this.Color = PointColor.EMPTY;
                 this.StoneCount = 0;
@@ -273,7 +273,6 @@
 
         class GoTree {
             constructor(settings) {
-                // Инициализация как в твоем NewGoTree
                 this.GameSettings = settings;
                 const board = Array(settings.BoardSize * settings.BoardSize).fill(PointColor.EMPTY);
                 
@@ -299,7 +298,7 @@
                     const child = this.CurrentNode.Children[i];
                     if (child.LatestMove === move) {
                         this.CurrentNode = child;
-                        return null; // Успех
+                        return null;
                     }
                 }
 
@@ -319,17 +318,30 @@
                 let totalCaptured = 0;
                 const capturedChains = [];
                 const neighbors = this.getNeighbors(move);
-                let    enemyNeighborCount = 0
+                let enemyNeighborCount = 0;
+
+                // Создаем кэш для защиты от повторного прохождения чейнов
+                const chainCache = new Map();
 
                 // Для каждого соседнего-вражеского камня проверяем жизнь его группы
                 for (const neighbor of neighbors) {
                     if (this.isEnemyStone(tempBoard[neighbor])) {
-                        const enemyChain = this.findChainAt(tempBoard, neighbor);
-                        if (enemyChain && this.isChainDead(enemyChain)) { 
-                            totalCaptured += enemyChain.StoneCount;
-                            capturedChains.push(enemyChain);
+                        enemyNeighborCount++;
+
+                        if (!chainCache.has(neighbor)) {
+                            const newChain = this.findChainAt(tempBoard, neighbor);
+
+                            // Кэшируем все камни цепи
+                            for (const pos of newChain.ChainMap) {
+                                chainCache.set(pos, newChain);
+                            }
                         }
-                        enemyNeighborCount = enemyNeighborCount + 1
+
+                        const chain = chainCache.get(neighbor);
+                        if (chain && this.isChainDead(chain)) { 
+                            totalCaptured += chain.StoneCount;
+                            capturedChains.push(chain);
+                        }
                     }
                 }
 
@@ -361,7 +373,7 @@
                     blackCaptures += totalCaptured;
                 }
 
-                // Новый узел - ТОЧНО КАК У ТЕБЯ
+                // Новый узел
                 const newNode = new GoNode(
                     this.CurrentNode,
                     tempBoard,
@@ -377,7 +389,7 @@
 
                 // Переходим на новый узел
                 this.CurrentNode = newNode;
-                return null; // Успех
+                return null;
             }
 
             oppositeColor(color) {
@@ -388,10 +400,8 @@
 
             removeCapturedStones(board, capturedChains) {
                 for (const chain of capturedChains) {
-                    for (const pos in chain.ChainMap) {
-                        if (chain.ChainMap[pos]) {
-                            board[parseInt(pos)] = PointColor.EMPTY;
-                        }
+                    for (const pos of chain.ChainMap) {
+                        board[pos] = PointColor.EMPTY;
                     }
                 }
             }
@@ -430,22 +440,22 @@
             }
 
             findConnectedStones(chain, board, startPos) {
-                const visited = {};
+                const visited = new Set();
                 const queue = [startPos];
                 const boardSize = this.GameSettings.BoardSize;
                 
                 while (queue.length > 0) {
                     const current = queue.shift();
                     
-                    if (visited[current]) continue;
-                    visited[current] = true;
+                    if (visited.has(current)) continue;
+                    visited.add(current);
                     
-                    chain.ChainMap[current] = true;
+                    chain.ChainMap.add(current);
                     chain.StoneCount++;
                     
                     const neighbors = this.getNeighbors(current);
                     for (const neighbor of neighbors) {
-                        if (!visited[neighbor] && board[neighbor] === chain.Color) {
+                        if (!visited.has(neighbor) && board[neighbor] === chain.Color) {
                             queue.push(neighbor);
                         }
                     }
@@ -454,16 +464,15 @@
 
             calculateDame(chain, board) {
                 let dameCount = 0;
-                const visitedDame = {};
+                const visitedDame = new Set();
                 const boardSize = this.GameSettings.BoardSize;
                 
-                for (const pos in chain.ChainMap) {
-                    const numPos = parseInt(pos);
-                    const neighbors = this.getNeighbors(numPos);
+                for (const pos of chain.ChainMap) {
+                    const neighbors = this.getNeighbors(pos);
                     for (const neighbor of neighbors) {
-                        if (board[neighbor] === PointColor.EMPTY && !visitedDame[neighbor]) {
+                        if (board[neighbor] === PointColor.EMPTY && !visitedDame.has(neighbor)) {
                             dameCount++;
-                            visitedDame[neighbor] = true;
+                            visitedDame.add(neighbor);
                         }
                     }
                 }
@@ -476,11 +485,10 @@
             }
 
             passTurn() {
-                // Создаем узел паса (ход -1)
                 const newNode = new GoNode(
                     this.CurrentNode,
-                    [...this.CurrentNode.Board], // Та же доска
-                    -1, // Пас
+                    [...this.CurrentNode.Board],
+                    -1,
                     this.CurrentNode.NodeOrder + 1,
                     this.oppositeColor(this.CurrentNode.LastMoveColor),
                     this.CurrentNode.BlackCaptures,
@@ -524,7 +532,6 @@
             createBoardUI();
             updateUI();
             
-            // Telegram Web App
             if (window.Telegram && Telegram.WebApp) {
                 Telegram.WebApp.ready();
                 Telegram.WebApp.expand();
@@ -537,7 +544,6 @@
             
             const size = gameTree.GameSettings.BoardSize;
             
-            // Создаем линии доски
             for (let i = 0; i < size; i++) {
                 const hLine = document.createElement('div');
                 hLine.className = 'board-line horizontal-line';
@@ -550,7 +556,6 @@
                 boardElement.appendChild(vLine);
             }
             
-            // Создаем пересечения для ходов
             for (let i = 0; i < size * size; i++) {
                 const intersection = document.createElement('div');
                 intersection.className = 'intersection';
@@ -558,7 +563,6 @@
                 const col = i % size;
                 const row = Math.floor(i / size);
                 
-                // Позиционируем точно на пересечениях линий
                 const left = col * (100 / (size - 1));
                 const top = row * (100 / (size - 1));
                 
@@ -599,7 +603,6 @@
             const currentPlayer = gameTree.getCurrentPlayer();
             const captures = gameTree.getCaptures();
             
-            // Обновляем камни на доске
             const intersections = document.getElementsByClassName('intersection');
             for (let i = 0; i < intersections.length; i++) {
                 intersections[i].innerHTML = '';
@@ -615,16 +618,13 @@
                 }
             }
             
-            // Обновляем счет
             document.getElementById('black-captures').textContent = captures.black;
             document.getElementById('white-captures').textContent = captures.white;
             
-            // Обновляем статус
             document.getElementById('status').textContent = 
                 `Ход ${currentPlayer === PointColor.BLACK ? 'чёрных' : 'белых'}`;
             document.getElementById('status').className = 'status';
             
-            // Подсвечиваем текущего игрока
             document.getElementById('black-info').classList.toggle('current-turn', 
                 currentPlayer === PointColor.BLACK);
             document.getElementById('white-info').classList.toggle('current-turn', 
@@ -641,7 +641,6 @@
             }, 2000);
         }
 
-        // ЗАПУСКАЕМ ИГРУ ПРИ ЗАГРУЗКЕ
         document.addEventListener('DOMContentLoaded', initGame);
     </script>
 </body>
